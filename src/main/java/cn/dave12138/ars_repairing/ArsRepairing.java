@@ -24,8 +24,6 @@ public class ArsRepairing {
 
     public ArsRepairing() {
         IEventBus modbus = FMLJavaModLoadingContext.get().getModEventBus();
-//        ModRegistry.registerRegistries(modbus);
-//        ArsNouveauRegistry.registerGlyphs();
         modbus.addListener(this::setup);
 //        modbus.addListener(this::doClientStuff);
         MinecraftForge.EVENT_BUS.register(this);

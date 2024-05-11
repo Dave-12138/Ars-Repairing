@@ -1,15 +1,7 @@
-# Ars-Nouveau-Example-Addon
+# Ars Repairing 新生魔艺：修复纤维强化
 
-An example repository for making an addon for Ars Nouveau! See the wiki for more info.
+给修复纤维添加像等价交换的修复护符一样的功能，甚至更魔怔。
 
-**Getting Started**
+可在配置文件配置两次修复之间的间隔、修复消耗的魔力、修复额外修正
 
-* Fork this repo for a ready to build work space.
-* Join the Ars Nouveau discord to ask questions, get help, or get ideas.
-
-Some useful links for beginners:
-* https://mcforge.readthedocs.io/en/latest/
-* https://forge.gemwire.uk/wiki/
-* https://wiki.mcjty.eu/modding/index.php?title=Main_Page
-* https://github.com/baileyholl/Ars-Nouveau/tree/1.18.x/src/main/java/com/hollingsworth/arsnouveau/api (Full API documentation)
-* https://github.com/bernie-g/geckolib/wiki (Animation library used by Ars Nouveau, optional)
+可以通过数据包给物品添加ars_repairing:no_repair指定物品不被该mod修复
