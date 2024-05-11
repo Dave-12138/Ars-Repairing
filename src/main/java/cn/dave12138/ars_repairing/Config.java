@@ -50,7 +50,6 @@ public class Config {
         repairingDelay = REPAIRING_DELAY.get();
         repairingCost = REPAIRING_COST.get();
         repairingBonus = REPAIRING_BONUS.get();
-//        Logger.getLogger("======currentMOD======").log(Level.WARNING, "Config.repairingDelay=" + repairingDelay);
    }
 
     @SubscribeEvent

@@ -20,7 +20,7 @@ import org.apache.logging.log4j.Logger;
 public class ArsRepairing {
     public static final String MOD_ID = "ars_repairing";
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    static final Logger LOGGER = LogManager.getLogger();
 
     public ArsRepairing() {
         IEventBus modbus = FMLJavaModLoadingContext.get().getModEventBus();

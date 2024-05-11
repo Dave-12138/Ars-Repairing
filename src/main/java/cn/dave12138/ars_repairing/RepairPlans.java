@@ -3,6 +3,7 @@ package cn.dave12138.ars_repairing;
 import cn.dave12138.ars_repairing.reflection.RepairPlan;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -13,13 +14,16 @@ import java.util.Map;
 public class RepairPlans {
     //    暂时不记录类，用不着
     public static void registerPlanClass(Class<?> planClass) {
-
-//        Logger.getLogger("===").log(Level.WARNING, ("===========register:" + planClass.getName()));
-        Arrays.stream(planClass.getMethods()).filter(method -> method.isAnnotationPresent(RepairPlan.class))
-                .forEach(method -> {
-                    String[] keys = method.getAnnotation(RepairPlan.class).value();
-                    for (String key : keys) PLAN_MAP.put(key, method);
-                });
+        ArsRepairing.LOGGER.info ("Ars Repairing register:" + planClass.getName());
+        for (Method method : planClass.getMethods()) {
+            if (method.isAnnotationPresent(RepairPlan.class)) {
+                String[] keys = method.getAnnotation(RepairPlan.class).value();
+                for (String key : keys) {
+                    PLAN_MAP.put(key, method);
+                    PLAN_PARAMS_MAP.remove(key);
+                }
+            }
+        }
     }
 
     private static final Map<String, Method> PLAN_MAP = new HashMap<>();
@@ -38,31 +42,32 @@ public class RepairPlans {
         PLAN_PARAMS_MAP.put(descriptionId, paramMap);
     }
 
+    private static String[] spareParamsNames;
+
+    private static String[] getSpareParamsNames() {
+        return spareParamsNames;
+    }
+
+    static {
+        Method[] methodsInThisClass = RepairPlans.class.getDeclaredMethods();
+        Arrays.stream(methodsInThisClass).filter(method -> "repair".equals(method.getName())).findFirst().ifPresentOrElse(
+                repairMethod -> spareParamsNames = Arrays.stream(repairMethod.getParameters()).map(Parameter::getName).toList().toArray(new String[0]),
+                () -> spareParamsNames = new String[]{"player", "stack", "repairLevel", "extraDurability"}//按理来说不可能出现呢这种情况吧
+        );
+    }
 
     public static boolean repair(Player player, ItemStack stack, int repairLevel, int extraDurability) {
         String translationKey = stack.getItem().getDescriptionId();
-//        Logger.getLogger("===").log(Level.WARNING, "===========name:" + translationKey);
-        try {
-            Method method = findMethod(translationKey);
-//            Logger.getLogger("===").log(Level.WARNING, "===========method:" + (method == null ? "null" : method.getName()));
-            if (method != null) {
+        Method method = findMethod(translationKey);
+        if (method != null) {
+            try {
                 Parameter[] methodParams = method.getParameters();
+                Object[] spareParams = {player, stack, repairLevel, extraDurability};
+
 //                先看看有没有函数参数映射缓存
                 int[] params = getParamMap(translationKey);
-                Object[] spareParams = new Object[]{player, stack, repairLevel, extraDurability};
                 if (params == null) {
-                    params = new int[methodParams.length];
-                    String[] spareParamsNames = new String[]{"player", "stack", "repairLevel", "extraDurability"};
-                    for (int i = 0; i < params.length; i++) {
-                        for (int j = 0; j < spareParams.length; j++) {
-                            Object spareParam = spareParams[j];
-//                          每个参数只填一次                      取名字，编译时开了 -parameters 才能这么用                取类型凑合一下
-                            if (spareParam != null && (methodParams[i].getName().equals(spareParamsNames[j]) || methodParams[i].getType().equals(spareParam.getClass()))) {
-                                params[i] = j;
-                                spareParams[j] = null;
-                            }
-                        }
-                    }
+                    params = createParamMap(methodParams, spareParams, getSpareParamsNames());
 //                    保存参数顺序映射
                     setParamMap(translationKey, params);
                 }
@@ -73,11 +78,30 @@ public class RepairPlans {
                     return (boolean) returnVal;
                 }
                 return true;
+
+            } catch (Exception e) {
+                ArsRepairing.LOGGER.debug("exception? how?");
+                ArsRepairing.LOGGER.debug(e.getStackTrace());
             }
-        } catch (Exception e) {
-            // do nothing
         }
         return normalItemRepair(stack, repairLevel, extraDurability);
+    }
+
+    private static int @NotNull [] createParamMap(Parameter[] methodParams, Object[] spareParams, String[] spareParamsNames) {
+        int[] params;
+        params = new int[methodParams.length];
+        Object[] spareParamsTemp = Arrays.copyOf(spareParams, spareParams.length);
+        for (int i = 0; i < params.length; i++) {
+            for (int j = 0; j < spareParamsTemp.length; j++) {
+                Object spareParam = spareParamsTemp[j];
+//                          每个参数只填一次                      取名字，编译时开了 -parameters 才能这么用                取类型凑合一下
+                if (spareParam != null && (methodParams[i].getName().equals(spareParamsNames[j]) || methodParams[i].getType().equals(spareParam.getClass()))) {
+                    params[i] = j;
+                    spareParamsTemp[j] = null;
+                }
+            }
+        }
+        return params;
     }
 
     public static boolean normalItemRepair(ItemStack stack, int repairLevel, int extraDurability) {
@@ -86,4 +110,5 @@ public class RepairPlans {
         stack.setDamageValue(oldDamage - dif);
         return stack.getDamageValue() < oldDamage;
     }
+
 }
